@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>교회 유치부 인도네시아어 따라 읽기</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Dongle:wght@700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0f172a;
+      font-family: 'Jua', sans-serif;
+      user-select: none;
+    }
+
+    /* 슬라이드 덱 뷰포트 컨테이너 */
+    #deck-wrapper {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    /* 화면 해상도 & 종횡비 최적화 무대 (Stage) */
+    #slide-stage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-origin: center center;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: width 0.3s ease, height 0.3s ease;
+    }
+
+    .slide-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.96) translateX(40px);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: clamp(20px, 4vw, 56px);
+    }
+
+    .slide-container.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateX(0);
+      z-index: 10;
+    }
+
+    /* 모니터에서 절대 줄바꿈 되지 않는 대형 텍스트 */
+    .single-line-title {
+      white-space: nowrap !important;
+      word-break: keep-all;
+      font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 48px;
+      border-radius: 999px;
+      margin-bottom: 34px;
+    }
+
+    /* 플로팅 컨트롤러 */
+    .controls-overlay {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      padding: 8px 18px;
+      border-radius: 9999px;
+      z-index: 100;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .control-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #ffffff;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .control-btn:hover {
+      background: #f97316;
+      transform: scale(1.08);
+    }
+
+    .control-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 비율 모드 선택 배지 버튼 */
+    .ratio-badge-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: sans-serif;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ratio-badge-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    .slide-counter {
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: bold;
+      min-width: 55px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="deck-wrapper">
+    <div id="slide-stage">
+
+      <!-- Slide 1: 첨부 이미지 기반 도입 슬라이드 (큰 소리로 따라 읽어요!) -->
+      <div class="slide-container active" id="slide1" style="background: #faf4e8;">
+        <!-- 상단 스피커 뱃지 -->
+        <div class="badge-pill" style="background: #fdecd2;">
+          <i class="fa-solid fa-volume-high" style="color: #ea580c; font-size: clamp(24px, 2.8vw, 42px);"></i>
+          <p style="color: #c2410c; margin: 0; font-size: clamp(26px, 3.2vw, 46px); font-weight: bold;">
+            선생님 따라 씩씩하게 외쳐요!
+          </p>
+        </div>
+
+        <!-- 메인 헤드라인 타이틀 -->
+        <h1 class="single-line-title" style="color: #1e293b; margin: 0 0 28px 0; font-size: clamp(86px, 12vw, 185px); letter-spacing: 2px;">
+          큰 소리로 따라 읽어요!
+        </h1>
+
+        <!-- 주황색 강조 바 -->
+        <div style="width: clamp(140px, 16vw, 240px); height: clamp(10px, 1.2vw, 16px); background: #f97316; border-radius: 999px; margin-bottom: 30px;"></div>
+
+        <!-- 하단 서브 안내 문구 -->
+        <p class="single-line-title" style="color: #334155; margin: 0; font-size: clamp(34px, 4.4vw, 64px); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 14px;">
+          예쁜 목소리로 하나씩 함께 읽어볼까요? <span style="font-size: 1.15em;">✨</span>
+        </p>
+      </div>
+
+      <!-- Slide 2: 할로 똠만똠만 (한 줄 유지) -->
+      <div class="slide-container" id="slide2" style="background: #fffdf5;">
+        <div class="badge-pill" style="background: #fef3c7;">
+          <i class="fa-solid fa-hand" style="color: #f59e0b; font-size: clamp(26px, 3vw, 44px);"></i>
+          <p style="color: #b45309; margin: 0; font-size: clamp(26px, 3.2vw, 46px); font-weight: bold;">
+            손을 흔들며 다 같이!
+          </p>
+        </div>
+        <h2 class="single-line-title" style="color: #f97316; margin: 0; letter-spacing: 4px; font-size: clamp(88px, 12.2vw, 195px);">
+          할로 똠만똠만 !
+        </h2>
+      </div>
+
+      <!-- Slide 3: 예수스 사양 까무 (한 줄 유지) -->
+      <div class="slide-container" id="slide3" style="background: #fdf2f8;">
+        <div class="badge-pill" style="background: #fce7f3;">
+          <i class="fa-solid fa-heart" style="color: #db2777; font-size: clamp(26px, 3vw, 44px);"></i>
+          <p style="color: #be185d; margin: 0; font-size: clamp(26px, 3.2vw, 46px); font-weight: bold;">
+            가슴에 손을 얹고 축복해요!
+          </p>
+        </div>
+        <h2 class="single-line-title" style="color: #db2777; margin: 0; letter-spacing: 4px; font-size: clamp(88px, 12.2vw, 195px);">
+          예수스 사양 까무 !
+        </h2>
+      </div>
+
+      <!-- Slide 4: 할로 똠만똠만 예수스 사양 까무 (마무리 종합) -->
+      <div class="slide-container" id="slide4" style="background: #fff8eb;">
+        <div class="badge-pill" style="background: #fed7aa; margin-bottom: 24px;">
+          <i class="fa-solid fa-star" style="color: #ea580c; font-size: clamp(26px, 3vw, 44px);"></i>
+          <p style="color: #c2410c; margin: 0; font-size: clamp(26px, 3.2vw, 46px); font-weight: bold;">
+            다 함께 이어서 크게 외쳐요!
+          </p>
+        </div>
+        <h2 style="font-size: clamp(75px, 10vw, 155px); color: #1e293b; margin: 0 0 24px 0; line-height: 1.22; word-break: keep-all; font-weight: 900;">
+          <span style="color: #f97316; white-space: nowrap;">할로 똠만똠만!</span><br>
+          <span style="color: #db2777; white-space: nowrap;">예수스 사양 까무!</span>
+        </h2>
+        <div style="width: 200px; height: 10px; background: #f97316; border-radius: 999px; margin-bottom: 22px;"></div>
+        <p style="font-size: clamp(30px, 3.6vw, 48px); color: #475569; margin: 0; font-weight: bold;">
+          "안녕 친구들아! 예수님은 너를 사랑하셔!" 💖
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="controls-overlay" id="controls">
+    <button class="control-btn" id="prevBtn" title="이전 (←)"><i class="fa-solid fa-chevron-left"></i></button>
+    <div class="slide-counter" id="counter">1 / 4</div>
+    <button class="control-btn" id="nextBtn" title="다음 (→ / Space)"><i class="fa-solid fa-chevron-right"></i></button>
+    <button class="ratio-badge-btn" id="ratioBtn" title="화면 비율 변경 (자동 / 16:9 / 4:3)"><i class="fa-solid fa-sliders"></i> <span id="ratioLabel">자동 비율</span></button>
+    <button class="control-btn" id="fsBtn" title="전체화면 (F)"><i class="fa-solid fa-expand"></i></button>
+  </div>
+
+  <script>
+    const stage = document.getElementById('slide-stage');
+    const ratioBtn = document.getElementById('ratioBtn');
+    const ratioLabel = document.getElementById('ratioLabel');
+
+    // 화면 비율 모드: 'auto' | '16:9' | '4:3'
+    const ratioModes = ['auto', '16:9', '4:3'];
+    let currentRatioIndex = 0;
+
+    /**
+     * 해상도 및 종횡비에 맞게 슬라이드 스테이지를 최적화 스케일링하는 함수
+     */
+    function adjustScreenResolution() {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const mode = ratioModes[currentRatioIndex];
+
+      let baseWidth, baseHeight;
+
+      if (mode === '16:9') {
+        baseWidth = 1920;
+        baseHeight = 1080;
+      } else if (mode === '4:3') {
+        baseWidth = 1440;
+        baseHeight = 1080;
+      } else {
+        // 자동(Auto) 모드: 화면 방향 및 크기에 따른 스마트 감지
+        if (windowHeight > windowWidth) {
+          // 세로 모드 최적화 (9:16)
+          baseWidth = 1080;
+          baseHeight = 1920;
+        } else {
+          const screenAspect = windowWidth / windowHeight;
+          if (screenAspect < 1.45) {
+            // 교회 구형 4:3 빔프로젝터 또는 태블릿
+            baseWidth = 1440;
+            baseHeight = 1080;
+          } else {
+            // 표준 16:9 와이드스크린 TV / 최신 빔프로젝터
+            baseWidth = 1920;
+            baseHeight = 1080;
+          }
+        }
+      }
+
+      // 스테이지 기준 해상도 설정
+      stage.style.width = baseWidth + 'px';
+      stage.style.height = baseHeight + 'px';
+
+      // 뷰포트 여백을 고려한 스케일 계산
+      const scaleX = (windowWidth * 0.98) / baseWidth;
+      const scaleY = (windowHeight * 0.98) / baseHeight;
+      const scale = Math.min(scaleX, scaleY);
+
+      stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    }
+
+    ratioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentRatioIndex = (currentRatioIndex + 1) % ratioModes.length;
+      const currentMode = ratioModes[currentRatioIndex];
+      ratioLabel.textContent = currentMode === 'auto' ? '자동 비율' : currentMode;
+      adjustScreenResolution();
+    });
+
+    window.addEventListener('resize', adjustScreenResolution);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(adjustScreenResolution, 150);
+    });
+
+    adjustScreenResolution();
+
+    const slides = document.querySelectorAll('.slide-container');
+    const totalSlides = slides.length;
+    let currentIndex = 0;
+
+    const counter = document.getElementById('counter');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const fsBtn = document.getElementById('fsBtn');
+
+    function updateSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+      currentIndex = index;
+
+      slides.forEach((slide, i) => {
+        if (i === currentIndex) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      counter.textContent = `${currentIndex + 1} / ${totalSlides}`;
+    }
+
+    prevBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      updateSlide(currentIndex - 1);
+    });
+
+    nextBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      updateSlide(currentIndex + 1);
+    });
+
+    // 화면 클릭으로 다음 슬라이드 이동 (하단 바 제외)
+    document.getElementById('deck-wrapper').addEventListener('click', () => {
+      updateSlide(currentIndex + 1);
+    });
+
+    // 키보드 방향키 / 스페이스바 / 엔터 지원
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown' || e.key === 'Enter') {
+        e.preventDefault();
+        updateSlide(currentIndex + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') {
+        e.preventDefault();
+        updateSlide(currentIndex - 1);
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      }
+    });
+
+    // 스마트폰 / 태블릿 스와이프 조작
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    window.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      const swipeDistance = touchEndX - touchStartX;
+      if (swipeDistance < -45) {
+        updateSlide(currentIndex + 1);
+      } else if (swipeDistance > 45) {
+        updateSlide(currentIndex - 1);
+      }
+    }, { passive: true });
+
+    // 전체화면 토글
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    fsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFullScreen();
+    });
+
+    updateSlide(0);
+  </script>
+</body>
+</html>
