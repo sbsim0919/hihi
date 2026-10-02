@@ -113,7 +113,7 @@
     /* 타이틀 및 텍스트 래퍼 */
     .hero-title-container {
       width: 100%;
-      max-width: 1760px;
+      max-width: 1600px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -333,71 +333,76 @@
     const totalSlides = slides.length;
 
     /**
-     * 화면 크기에 맞춰 스테이지를 16:9 비율로 자동 스케일링
+     * 개별 슬라이드의 텍스트를 화면 안전 여백(1600px)에 맞춰 자동 조절
      */
-    function adjustScreenResolution() {
-      try {
-        const winW = window.innerWidth || document.documentElement.clientWidth || 1920;
-        const winH = window.innerHeight || document.documentElement.clientHeight || 1080;
+    function fitSlideText(slide) {
+      if (!slide) return;
+      const maxWidth = 1600; // 1920 기준 좌우 160px 안전 여백 확보
 
-        const baseW = 1920;
-        const baseH = 1080;
+      // 2, 3번 슬라이드: 단일 문장 자동 맞춤
+      const single = slide.querySelector('.fit-single');
+      if (single) {
+        let low = 30;
+        let high = 155; // 화면 밖으로 넘치지 않도록 상한선 최적화
+        let optimal = low;
 
-        const scale = Math.min(winW / baseW, winH / baseH);
-        stage.style.transform = `scale(${Math.max(scale, 0.1)})`;
-      } catch (e) {
-        console.error("Scale adjustment error:", e);
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          single.style.fontSize = mid + 'px';
+          if (single.scrollWidth <= maxWidth) {
+            optimal = mid;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+        single.style.fontSize = optimal + 'px';
+      }
+
+      // 4번 슬라이드: 두 문장 동일 크기 동기화
+      const group = Array.from(slide.querySelectorAll('.sync-group'));
+      if (group.length > 0) {
+        let low = 25;
+        let high = 125;
+        let optimal = low;
+
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          group.forEach(t => t.style.fontSize = mid + 'px');
+
+          const fits = group.every(t => t.scrollWidth <= maxWidth);
+          if (fits) {
+            optimal = mid;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+        group.forEach(t => t.style.fontSize = optimal + 'px');
       }
     }
 
     /**
-     * 슬라이드 내 텍스트 크기를 화면 폭에 맞춰 자동 최대화
+     * 모든 슬라이드의 텍스트 크기 계산 (숨겨진 슬라이드 측정 오류 방지)
      */
     function fitAllTexts() {
       try {
-        const maxWidth = 1760;
-
-        // 2, 3번 슬라이드 개별 단일 문장 자동 맞춤
-        const singleTexts = document.querySelectorAll('.fit-single');
-        singleTexts.forEach(el => {
-          let low = 40;
-          let high = 200;
-          let optimal = low;
-
-          while (low <= high) {
-            const mid = Math.floor((low + high) / 2);
-            el.style.fontSize = mid + 'px';
-            if (el.scrollWidth <= maxWidth) {
-              optimal = mid;
-              low = mid + 1;
-            } else {
-              high = mid - 1;
-            }
+        slides.forEach((slide, idx) => {
+          const isCurrentlyHidden = (idx !== currentIndex);
+          if (isCurrentlyHidden) {
+            slide.style.visibility = 'hidden';
+            slide.style.display = 'flex';
+            slide.style.position = 'absolute';
           }
-          el.style.fontSize = optimal + 'px';
+
+          fitSlideText(slide);
+
+          if (isCurrentlyHidden) {
+            slide.style.display = 'none';
+            slide.style.visibility = '';
+            slide.style.position = '';
+          }
         });
-
-        // 4번 슬라이드: 두 문장의 폰트 크기를 완벽히 동일하게 동기화
-        const groupTexts = Array.from(document.querySelectorAll('.sync-group'));
-        if (groupTexts.length > 0) {
-          let low = 30;
-          let high = 150;
-          let optimal = low;
-
-          while (low <= high) {
-            const mid = Math.floor((low + high) / 2);
-            groupTexts.forEach(t => t.style.fontSize = mid + 'px');
-
-            const fits = groupTexts.every(t => t.scrollWidth <= maxWidth);
-            if (fits) {
-              optimal = mid;
-              low = mid + 1;
-            } else {
-              high = mid - 1;
-            }
-          }
-          groupTexts.forEach(t => t.style.fontSize = optimal + 'px');
-        }
       } catch (err) {
         console.error("Fit texts error:", err);
       }
@@ -420,7 +425,7 @@
       });
 
       counter.textContent = `${currentIndex + 1} / ${totalSlides}`;
-      fitAllTexts();
+      fitSlideText(slides[currentIndex]);
     }
 
     function prevSlide() {
@@ -487,7 +492,6 @@
      */
     async function exportToPPTX() {
       if (typeof window.PptxGenJS === 'undefined' || typeof html2canvas === 'undefined') {
-        alert("PPTX 라이브러리를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
         return;
       }
 
@@ -499,7 +503,6 @@
 
       try {
         stage.style.transform = 'scale(1)';
-        fitAllTexts();
 
         const pptx = new window.PptxGenJS();
         pptx.layout = 'LAYOUT_16x9';
@@ -512,7 +515,9 @@
             s.style.opacity = (idx === i) ? '1' : '0';
           });
 
-          await new Promise(r => setTimeout(r, 200));
+          // 현재 활성화된 슬라이드의 글자 폭 재계산
+          fitSlideText(slides[i]);
+          await new Promise(r => setTimeout(r, 150));
 
           const canvas = await html2canvas(stage, {
             scale: 1,
@@ -558,7 +563,6 @@
 
       try {
         stage.style.transform = 'scale(1)';
-        fitAllTexts();
 
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
@@ -571,7 +575,9 @@
             s.style.opacity = (idx === i) ? '1' : '0';
           });
 
-          await new Promise(r => setTimeout(r, 200));
+          // 현재 활성화된 슬라이드의 글자 폭 재계산
+          fitSlideText(slides[i]);
+          await new Promise(r => setTimeout(r, 150));
 
           const canvas = await html2canvas(stage, {
             scale: 1,
