@@ -7,9 +7,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Dongle:wght@700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- PDF 생성용 라이브러리 (html2canvas & jsPDF) -->
+  <!-- PDF & PPTX 내보내기 라이브러리 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 
   <style>
     * {
@@ -17,87 +18,142 @@
       margin: 0;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
+
     html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #0f172a;
+      background-color: #111827;
       font-family: 'Jua', sans-serif;
-      user-select: none;
     }
 
-    /* 슬라이드 덱 뷰포트 컨테이너 */
-    #deck-wrapper {
+    /* 슬라이드 래퍼 */
+    .stage-wrapper {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #111827;
+      overflow: hidden;
+    }
+
+    /* 메인 무대 (16:9 기준) */
+    .stage {
       position: relative;
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-      background: #0f172a;
-    }
-
-    /* 화면 해상도 & 종횡비 최적화 무대 (Stage) */
-    #slide-stage {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform-origin: center center;
+      width: 1920px;
+      height: 1080px;
+      background: #faf4e8;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
-      border-radius: 20px;
+      border-radius: 18px;
       overflow: hidden;
-      transition: width 0.3s ease, height 0.3s ease;
+      transform-origin: center center;
+      transition: transform 0.15s ease-out;
+      flex-shrink: 0;
     }
 
-    .slide-container {
+    /* 슬라이드 개별 컨테이너 */
+    .slide {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      box-sizing: border-box;
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(0.96) translateX(40px);
-      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      display: flex;
+      inset: 0;
+      display: none;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      padding: 60px 80px;
       text-align: center;
-      padding: clamp(20px, 4vw, 56px);
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
     }
 
-    .slide-container.active {
+    /* 기본 첫 슬라이드 또는 활성 슬라이드 표시 */
+    .slide.active {
+      display: flex;
       opacity: 1;
-      pointer-events: auto;
-      transform: scale(1) translateX(0);
       z-index: 10;
     }
 
-    /* 화면 컨테이너 너비에 맞추어 넘치지 않는 자동 피팅 타이틀 래퍼 */
-    .autofit-text {
-      white-space: nowrap !important;
-      word-break: keep-all;
-      font-weight: 900;
-      line-height: 1.15;
-      display: inline-block;
-      max-width: 94%;
-      text-align: center;
-    }
-
-    .badge-pill {
+    /* 뱃지 디자인 */
+    .badge {
       display: inline-flex;
       align-items: center;
-      gap: 16px;
-      padding: 18px 48px;
-      border-radius: 999px;
-      margin-bottom: 34px;
+      justify-content: center;
+      gap: 14px;
+      padding: 16px 38px;
+      border-radius: 9999px;
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 45px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
     }
 
-    /* 플로팅 컨트롤러 */
+    .badge-intro {
+      background: #fee6c6;
+      color: #ea580c;
+    }
+
+    .badge-orange {
+      background: #ffedd5;
+      color: #c2410c;
+    }
+
+    .badge-pink {
+      background: #fce7f3;
+      color: #be185d;
+    }
+
+    .badge-purple {
+      background: #f3e8ff;
+      color: #7e22ce;
+    }
+
+    /* 타이틀 및 텍스트 래퍼 */
+    .hero-title-container {
+      width: 100%;
+      max-width: 1760px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .hero-text {
+      font-family: 'Jua', sans-serif;
+      font-weight: 900;
+      line-height: 1.15;
+      white-space: nowrap;
+      text-align: center;
+      display: inline-block;
+      width: 100%;
+    }
+
+    /* 1번 슬라이드 전용 스타일 */
+    .intro-title {
+      font-size: 110px;
+      color: #1e293b;
+      margin-bottom: 24px;
+      letter-spacing: -1px;
+    }
+
+    .intro-bar {
+      width: 170px;
+      height: 12px;
+      background: #f97316;
+      border-radius: 9999px;
+      margin-bottom: 30px;
+    }
+
+    .intro-subtitle {
+      font-size: 46px;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    /* 컨트롤 오버레이 */
     .controls-overlay {
       position: fixed;
       bottom: 24px;
@@ -106,75 +162,55 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
-      padding: 8px 18px;
+      padding: 10px 18px;
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(10px);
       border-radius: 9999px;
-      z-index: 100;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      z-index: 100;
+      opacity: 0.25;
+      transition: opacity 0.25s ease;
+    }
+
+    .controls-overlay:hover,
+    .controls-overlay:focus-within {
+      opacity: 1;
     }
 
     .control-btn {
       background: rgba(255, 255, 255, 0.15);
       border: none;
       color: #ffffff;
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      transition: all 0.2s ease;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.18s ease;
     }
 
     .control-btn:hover {
-      background: #f97316;
+      background: rgba(255, 255, 255, 0.3);
       transform: scale(1.08);
-    }
-
-    .control-btn:active {
-      transform: scale(0.95);
-    }
-
-    /* 비율 모드 선택 배지 버튼 */
-    .ratio-badge-btn {
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      color: #cbd5e1;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      cursor: pointer;
-      font-family: sans-serif;
-      font-weight: bold;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ratio-badge-btn:hover {
-      background: rgba(255, 255, 255, 0.25);
-      color: #fff;
     }
 
     .slide-counter {
       color: #ffffff;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: bold;
-      min-width: 55px;
+      min-width: 60px;
       text-align: center;
       letter-spacing: 1px;
     }
 
-    /* PDF 로딩 상태 인디케이터 오버레이 */
-    #pdf-loading {
+    /* 로딩 인디케이터 오버레이 */
+    #export-loading {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.88);
       backdrop-filter: blur(8px);
       z-index: 9999;
       display: none;
@@ -185,13 +221,13 @@
       font-family: 'Jua', sans-serif;
     }
 
-    #pdf-loading .spinner {
-      width: 54px;
-      height: 54px;
+    #export-loading .spinner {
+      width: 50px;
+      height: 50px;
       border: 5px solid rgba(255, 255, 255, 0.2);
       border-top-color: #f97316;
       border-radius: 50%;
-      animation: spin 0.9s linear infinite;
+      animation: spin 0.8s linear infinite;
       margin-bottom: 20px;
     }
 
@@ -199,293 +235,184 @@
       to { transform: rotate(360deg); }
     }
 
-    /* 인쇄(Print to PDF) 미디어 쿼리 최적화 */
+    /* 인쇄 최적화 */
     @media print {
-      body, html {
-        width: 100% !important;
-        height: auto !important;
-        overflow: visible !important;
-        background: #ffffff !important;
-      }
-      #deck-wrapper {
-        display: block !important;
-        width: 100% !important;
-        height: auto !important;
-        overflow: visible !important;
-      }
-      #slide-stage {
-        position: static !important;
-        transform: none !important;
-        box-shadow: none !important;
-        width: 100% !important;
-        height: auto !important;
-        border-radius: 0 !important;
-      }
-      .slide-container {
-        position: relative !important;
-        display: flex !important;
-        opacity: 1 !important;
-        transform: none !important;
-        width: 100vw !important;
-        height: 56.25vw !important; /* 16:9 비율 유지 */
-        page-break-after: always !important;
-        break-after: page !important;
-      }
-      .controls-overlay, #pdf-loading {
-        display: none !important;
-      }
+      body { background: white !important; }
+      .controls-overlay, #export-loading { display: none !important; }
+      .stage-wrapper { position: static !important; }
+      .stage { transform: none !important; width: 100% !important; height: 100vh !important; }
+      .slide { display: flex !important; opacity: 1 !important; page-break-after: always; }
     }
   </style>
 </head>
 <body>
 
-  <div id="deck-wrapper">
-    <div id="slide-stage">
+  <div class="stage-wrapper" id="stageWrapper">
+    <div class="stage" id="stage">
 
-      <!-- Slide 1: 인도네시아어 도입 슬라이드 (Ayo Baca dengan Suara Keras!) -->
-      <div class="slide-container active" id="slide1" style="background: #faf4e8;">
-        <!-- 상단 스피커 뱃지 -->
-        <div class="badge-pill" style="background: #fdecd2;">
-          <i class="fa-solid fa-volume-high" style="color: #ea580c; font-size: clamp(24px, 2.8vw, 42px);"></i>
-          <p style="color: #c2410c; margin: 0; font-size: clamp(24px, 3vw, 44px); font-weight: bold;">
-            Ayo ikuti guru dengan semangat!
-          </p>
+      <!-- 1번 슬라이드: 인트로 (인도네시아어) -->
+      <section class="slide active" id="slide-1" style="background-color: #faf4e8;">
+        <div class="badge badge-intro">
+          <i class="fa-solid fa-bullhorn"></i>
+          <span>Ayo ikuti guru dengan semangat!</span>
         </div>
+        <div class="intro-title">Ayo Baca dengan Suara Keras!</div>
+        <div class="intro-bar"></div>
+        <div class="intro-subtitle">Mari membaca bersama dengan gembira! ✨</div>
+      </section>
 
-        <!-- 메인 헤드라인 타이틀 -->
-        <h1 class="single-line-title" style="color: #1e293b; margin: 0 0 28px 0; font-size: clamp(70px, 9.8vw, 155px); letter-spacing: 2px;">
-          Ayo Baca dengan Suara Keras!
-        </h1>
-
-        <!-- 주황색 강조 바 -->
-        <div style="width: clamp(140px, 16vw, 240px); height: clamp(10px, 1.2vw, 16px); background: #f97316; border-radius: 999px; margin-bottom: 30px;"></div>
-
-        <!-- 하단 서브 안내 문구 -->
-        <p class="single-line-title" style="color: #334155; margin: 0; font-size: clamp(30px, 3.8vw, 56px); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 14px;">
-          Mari membaca bersama dengan gembira! <span style="font-size: 1.15em;">✨</span>
-        </p>
-      </div>
-
-      <!-- Slide 2: An-nyeong chin-gu-deul (한 줄 유지) -->
-      <div class="slide-container" id="slide2" style="background: #fffdf5;">
-        <div class="badge-pill" style="background: #fef3c7;">
-          <i class="fa-solid fa-hand" style="color: #f59e0b; font-size: clamp(26px, 3vw, 44px);"></i>
-          <p style="color: #b45309; margin: 0; font-size: clamp(24px, 3vw, 44px); font-weight: bold;">
-            Ayo lambaikan tangan bersama!
-          </p>
+      <!-- 2번 슬라이드: An-nyeong chin-gu-deul ! -->
+      <section class="slide" id="slide-2" style="background-color: #fef7ee;">
+        <div class="badge badge-orange">
+          <i class="fa-solid fa-hand"></i>
+          <span>Ayo lambaikan tangan bersama! 👋</span>
         </div>
-        <h2 class="autofit-text" data-max-size="150" style="color: #f97316; margin: 0; letter-spacing: 2px;">
-          An-nyeong chin-gu-deul !
-        </h2>
-      </div>
+        <div class="hero-title-container">
+          <div class="hero-text fit-single" style="color: #ea580c;">An-nyeong chin-gu-deul !</div>
+        </div>
+      </section>
 
-      <!-- Slide 3: Ye-su-nim-eun neo-reul sa-rang-hae (글자 크기 자동 피팅으로 시원하게 확대) -->
-      <div class="slide-container" id="slide3" style="background: #fdf2f8;">
-        <div class="badge-pill" style="background: #fce7f3;">
-          <i class="fa-solid fa-heart" style="color: #db2777; font-size: clamp(26px, 3vw, 44px);"></i>
-          <p style="color: #be185d; margin: 0; font-size: clamp(24px, 3vw, 44px); font-weight: bold;">
-            Taruh tangan di dada dengan kasih!
-          </p>
+      <!-- 3번 슬라이드: Ye-su-nim-eun neo-reul sa-rang-hae ! -->
+      <section class="slide" id="slide-3" style="background-color: #fff1f2;">
+        <div class="badge badge-pink">
+          <i class="fa-solid fa-heart"></i>
+          <span>Sentuh dada dan saling memberkati! 💖</span>
         </div>
-        <h2 class="autofit-text" data-max-size="140" style="color: #db2777; margin: 0; letter-spacing: 1px;">
-          Ye-su-nim-eun neo-reul sa-rang-hae !
-        </h2>
-      </div>
+        <div class="hero-title-container">
+          <div class="hero-text fit-single" style="color: #e11d48;">Ye-su-nim-eun neo-reul sa-rang-hae !</div>
+        </div>
+      </section>
 
-      <!-- Slide 4: 두 문장 동일 크기 및 자동 균형 피팅 -->
-      <div class="slide-container" id="slide4" style="background: #fff8eb;">
-        <div class="badge-pill" style="background: #fed7aa; margin-bottom: 24px;">
-          <i class="fa-solid fa-star" style="color: #ea580c; font-size: clamp(26px, 3vw, 44px);"></i>
-          <p style="color: #c2410c; margin: 0; font-size: clamp(24px, 3vw, 44px); font-weight: bold;">
-            Ayo berseru bersama dengan lantang!
-          </p>
+      <!-- 4번 슬라이드: 두 문장 동일 크기 표시 -->
+      <section class="slide" id="slide-4" style="background-color: #faf5ff;">
+        <div class="badge badge-purple">
+          <i class="fa-solid fa-star"></i>
+          <span>Ayo berseru bersama dengan lantang! 🌟</span>
         </div>
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; width: 100%;">
-          <span class="autofit-text group-sync-size" data-max-size="115" style="color: #f97316;">
-            An-nyeong chin-gu-deul !
-          </span>
-          <span class="autofit-text group-sync-size" data-max-size="115" style="color: #db2777;">
-            Ye-su-nim-eun neo-reul sa-rang-hae !
-          </span>
+        <div class="hero-title-container" id="slide4-group">
+          <div class="hero-text sync-group" style="color: #ea580c;">An-nyeong chin-gu-deul !</div>
+          <div class="hero-text sync-group" style="color: #db2777;">Ye-su-nim-eun neo-reul sa-rang-hae !</div>
         </div>
-      </div>
+      </section>
 
     </div>
   </div>
 
+  <!-- 컨트롤 바 -->
   <div class="controls-overlay" id="controls">
     <button class="control-btn" id="prevBtn" title="이전 (←)"><i class="fa-solid fa-chevron-left"></i></button>
     <div class="slide-counter" id="counter">1 / 4</div>
     <button class="control-btn" id="nextBtn" title="다음 (→ / Space)"><i class="fa-solid fa-chevron-right"></i></button>
-    <button class="ratio-badge-btn" id="ratioBtn" title="화면 비율 변경 (자동 / 16:9 / 4:3)"><i class="fa-solid fa-sliders"></i> <span id="ratioLabel">자동 비율</span></button>
-    <button class="control-btn" id="pdfBtn" title="PDF로 다운로드" style="background: rgba(249, 115, 22, 0.4);"><i class="fa-solid fa-file-pdf"></i></button>
+    <button class="control-btn" id="pptBtn" title="PowerPoint(.pptx) 다운로드" style="background: rgba(220, 38, 38, 0.6);"><i class="fa-solid fa-file-powerpoint"></i></button>
+    <button class="control-btn" id="pdfBtn" title="PDF 다운로드" style="background: rgba(249, 115, 22, 0.6);"><i class="fa-solid fa-file-pdf"></i></button>
     <button class="control-btn" id="fsBtn" title="전체화면 (F)"><i class="fa-solid fa-expand"></i></button>
   </div>
 
-  <!-- PDF 생성 중 로딩 안내 -->
-  <div id="pdf-loading">
+  <!-- 내보내기 로딩 인디케이터 -->
+  <div id="export-loading">
     <div class="spinner"></div>
-    <h2 style="font-size: 28px; margin-bottom: 8px;">PDF 슬라이드를 만드는 중...</h2>
-    <p id="pdf-status" style="color: #cbd5e1; font-size: 18px;">잠시만 기다려주세요 (1/4)</p>
+    <h2 id="loading-title" style="font-size: 26px; margin-bottom: 8px;">파일 생성 중...</h2>
+    <p id="loading-status" style="color: #cbd5e1; font-size: 17px;">잠시만 기다려주세요</p>
   </div>
 
   <script>
-    const stage = document.getElementById('slide-stage');
-    const ratioBtn = document.getElementById('ratioBtn');
-    const ratioLabel = document.getElementById('ratioLabel');
-
-    // 화면 비율 모드: 'auto' | '16:9' | '4:3'
-    const ratioModes = ['auto', '16:9', '4:3'];
-    let currentRatioIndex = 0;
-
-    /**
-     * 슬라이드 스테이지 내 글자가 화면 너비에 맞게 최대 크기로 자동 조절되는 함수
-     */
-    function fitAllTexts() {
-      // 1. 개별 자동 피팅 대상 요소
-      const autoTexts = stage.querySelectorAll('.autofit-text:not(.group-sync-size)');
-      const stageWidth = stage.offsetWidth;
-      const targetWidth = stageWidth * 0.90; // 안전 여백 10% 제외한 영역
-
-      autoTexts.forEach(el => {
-        const maxSize = parseFloat(el.getAttribute('data-max-size')) || 150;
-        let low = 24;
-        let high = maxSize;
-        let best = low;
-
-        // 이진 탐색(Binary Search)으로 무대 너비에 꽉 차는 최적 폰트 크기 계산
-        for (let i = 0; i < 9; i++) {
-          const mid = (low + high) / 2;
-          el.style.fontSize = mid + 'px';
-          if (el.scrollWidth <= targetWidth) {
-            best = mid;
-            low = mid;
-          } else {
-            high = mid;
-          }
-        }
-        el.style.fontSize = Math.floor(best) + 'px';
-      });
-
-      // 2. 4번 슬라이드: 두 문장의 글자 크기를 완전히 동일하게 일치시키면서 자동 피팅
-      const syncGroup = stage.querySelectorAll('.group-sync-size');
-      if (syncGroup.length > 0) {
-        const maxSize = parseFloat(syncGroup[0].getAttribute('data-max-size')) || 115;
-        let low = 24;
-        let high = maxSize;
-        let best = low;
-
-        for (let i = 0; i < 9; i++) {
-          const mid = (low + high) / 2;
-          syncGroup.forEach(el => el.style.fontSize = mid + 'px');
-
-          let allFit = true;
-          syncGroup.forEach(el => {
-            if (el.scrollWidth > targetWidth) {
-              allFit = false;
-            }
-          });
-
-          if (allFit) {
-            best = mid;
-            low = mid;
-          } else {
-            high = mid;
-          }
-        }
-        syncGroup.forEach(el => el.style.fontSize = Math.floor(best) + 'px');
-      }
-    }
-
-    /**
-     * 해상도 및 종횡비에 맞게 슬라이드 스테이지를 최적화 스케일링하는 함수
-     */
-    function adjustScreenResolution() {
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-      const mode = ratioModes[currentRatioIndex];
-
-      let baseWidth, baseHeight;
-
-      if (mode === '16:9') {
-        baseWidth = 1920;
-        baseHeight = 1080;
-      } else if (mode === '4:3') {
-        baseWidth = 1440;
-        baseHeight = 1080;
-      } else {
-        // 자동(Auto) 모드: 화면 방향 및 크기에 따른 스마트 감지
-        if (windowHeight > windowWidth) {
-          baseWidth = 1080;
-          baseHeight = 1920;
-        } else {
-          const screenAspect = windowWidth / windowHeight;
-          if (screenAspect < 1.45) {
-            baseWidth = 1440;
-            baseHeight = 1080;
-          } else {
-            baseWidth = 1920;
-            baseHeight = 1080;
-          }
-        }
-      }
-
-      // 스테이지 기준 해상도 설정
-      stage.style.width = baseWidth + 'px';
-      stage.style.height = baseHeight + 'px';
-
-      // 텍스트 자동 크기 재계산
-      fitAllTexts();
-
-      // 뷰포트 여백을 고려한 스케일 계산
-      const scaleX = (windowWidth * 0.98) / baseWidth;
-      const scaleY = (windowHeight * 0.98) / baseHeight;
-      const scale = Math.min(scaleX, scaleY);
-
-      stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
-    }
-
-    ratioBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      currentRatioIndex = (currentRatioIndex + 1) % ratioModes.length;
-      const currentMode = ratioModes[currentRatioIndex];
-      ratioLabel.textContent = currentMode === 'auto' ? '자동 비율' : currentMode;
-      adjustScreenResolution();
-    });
-
-    window.addEventListener('resize', adjustScreenResolution);
-    window.addEventListener('orientationchange', () => {
-      setTimeout(adjustScreenResolution, 150);
-    });
-
-    // 폰트 로드 완료 후 정확한 크기 계산을 위해 재실행
-    if (document.fonts) {
-      document.fonts.ready.then(() => {
-        adjustScreenResolution();
-      });
-    }
-
-    adjustScreenResolution();
-
-    const slides = document.querySelectorAll('.slide-container');
-    const totalSlides = slides.length;
-    let currentIndex = 0;
-
+    const stageWrapper = document.getElementById('stageWrapper');
+    const stage = document.getElementById('stage');
+    const slides = Array.from(document.querySelectorAll('.slide'));
     const counter = document.getElementById('counter');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const fsBtn = document.getElementById('fsBtn');
     const pdfBtn = document.getElementById('pdfBtn');
-    const pdfLoading = document.getElementById('pdf-loading');
-    const pdfStatus = document.getElementById('pdf-status');
+    const pptBtn = document.getElementById('pptBtn');
+    const exportLoading = document.getElementById('export-loading');
+    const loadingTitle = document.getElementById('loading-title');
+    const loadingStatus = document.getElementById('loading-status');
 
+    let currentIndex = 0;
+    const totalSlides = slides.length;
+
+    /**
+     * 화면 크기에 맞춰 스테이지를 16:9 비율로 자동 스케일링
+     */
+    function adjustScreenResolution() {
+      try {
+        const winW = window.innerWidth || document.documentElement.clientWidth || 1920;
+        const winH = window.innerHeight || document.documentElement.clientHeight || 1080;
+
+        const baseW = 1920;
+        const baseH = 1080;
+
+        const scale = Math.min(winW / baseW, winH / baseH);
+        stage.style.transform = `scale(${Math.max(scale, 0.1)})`;
+      } catch (e) {
+        console.error("Scale adjustment error:", e);
+      }
+    }
+
+    /**
+     * 슬라이드 내 텍스트 크기를 화면 폭에 맞춰 자동 최대화
+     */
+    function fitAllTexts() {
+      try {
+        const maxWidth = 1760;
+
+        // 2, 3번 슬라이드 개별 단일 문장 자동 맞춤
+        const singleTexts = document.querySelectorAll('.fit-single');
+        singleTexts.forEach(el => {
+          let low = 40;
+          let high = 200;
+          let optimal = low;
+
+          while (low <= high) {
+            const mid = Math.floor((low + high) / 2);
+            el.style.fontSize = mid + 'px';
+            if (el.scrollWidth <= maxWidth) {
+              optimal = mid;
+              low = mid + 1;
+            } else {
+              high = mid - 1;
+            }
+          }
+          el.style.fontSize = optimal + 'px';
+        });
+
+        // 4번 슬라이드: 두 문장의 폰트 크기를 완벽히 동일하게 동기화
+        const groupTexts = Array.from(document.querySelectorAll('.sync-group'));
+        if (groupTexts.length > 0) {
+          let low = 30;
+          let high = 150;
+          let optimal = low;
+
+          while (low <= high) {
+            const mid = Math.floor((low + high) / 2);
+            groupTexts.forEach(t => t.style.fontSize = mid + 'px');
+
+            const fits = groupTexts.every(t => t.scrollWidth <= maxWidth);
+            if (fits) {
+              optimal = mid;
+              low = mid + 1;
+            } else {
+              high = mid - 1;
+            }
+          }
+          groupTexts.forEach(t => t.style.fontSize = optimal + 'px');
+        }
+      } catch (err) {
+        console.error("Fit texts error:", err);
+      }
+    }
+
+    /**
+     * 슬라이드 전환 함수
+     */
     function updateSlide(index) {
       if (index < 0) index = 0;
       if (index >= totalSlides) index = totalSlides - 1;
       currentIndex = index;
 
-      slides.forEach((slide, i) => {
-        if (i === currentIndex) {
+      slides.forEach((slide, idx) => {
+        if (idx === currentIndex) {
           slide.classList.add('active');
         } else {
           slide.classList.remove('active');
@@ -493,72 +420,129 @@
       });
 
       counter.textContent = `${currentIndex + 1} / ${totalSlides}`;
+      fitAllTexts();
     }
 
-    prevBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      updateSlide(currentIndex - 1);
-    });
+    function prevSlide() {
+      if (currentIndex > 0) updateSlide(currentIndex - 1);
+    }
 
-    nextBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      updateSlide(currentIndex + 1);
-    });
+    function nextSlide() {
+      if (currentIndex < totalSlides - 1) updateSlide(currentIndex + 1);
+    }
 
-    // 화면 클릭으로 다음 슬라이드 이동 (하단 바 제외)
-    document.getElementById('deck-wrapper').addEventListener('click', () => {
-      updateSlide(currentIndex + 1);
-    });
-
-    // 키보드 방향키 / 스페이스바 / 엔터 지원
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown' || e.key === 'Enter') {
-        e.preventDefault();
-        updateSlide(currentIndex + 1);
-      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') {
-        e.preventDefault();
-        updateSlide(currentIndex - 1);
-      } else if (e.key === 'f' || e.key === 'F') {
-        toggleFullScreen();
-      }
-    });
-
-    // 스마트폰 / 태블릿 스와이프 조작
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    window.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    window.addEventListener('touchend', (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      const swipeDistance = touchEndX - touchStartX;
-      if (swipeDistance < -45) {
-        updateSlide(currentIndex + 1);
-      } else if (swipeDistance > 45) {
-        updateSlide(currentIndex - 1);
-      }
-    }, { passive: true });
-
-    // 전체화면 토글
     function toggleFullScreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
+        if (document.exitFullscreen) document.exitFullscreen();
       }
     }
 
-    fsBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleFullScreen();
+    // 이벤트 리스너 등록
+    prevBtn.addEventListener('click', (e) => { e.stopPropagation(); prevSlide(); });
+    nextBtn.addEventListener('click', (e) => { e.stopPropagation(); nextSlide(); });
+    fsBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFullScreen(); });
+
+    // 화면 터치 / 클릭 시 다음 슬라이드
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#controls') || e.target.closest('#export-loading')) return;
+      nextSlide();
+    });
+
+    // 키보드 방향키 조작
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFullScreen();
+      }
+    });
+
+    // 터치 스와이프 조작
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      const touchEndX = e.changedTouches[0].screenX;
+      const diff = touchEndX - touchStartX;
+      if (diff < -50) nextSlide();
+      else if (diff > 50) prevSlide();
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      adjustScreenResolution();
+      fitAllTexts();
     });
 
     /**
-     * 모든 슬라이드를 고화질(1920x1080 16:9)로 캡처하여 하나의 PDF로 다운로드하는 함수
+     * PPTX 내보내기 함수
+     */
+    async function exportToPPTX() {
+      if (typeof window.PptxGenJS === 'undefined' || typeof html2canvas === 'undefined') {
+        alert("PPTX 라이브러리를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+
+      exportLoading.style.display = 'flex';
+      loadingTitle.textContent = 'PowerPoint(.pptx) 파일 생성 중...';
+      loadingStatus.textContent = '슬라이드 준비 중...';
+
+      const originalIndex = currentIndex;
+
+      try {
+        stage.style.transform = 'scale(1)';
+        fitAllTexts();
+
+        const pptx = new window.PptxGenJS();
+        pptx.layout = 'LAYOUT_16x9';
+
+        for (let i = 0; i < totalSlides; i++) {
+          loadingStatus.textContent = `슬라이드 변환 중... (${i + 1} / ${totalSlides})`;
+
+          slides.forEach((s, idx) => {
+            s.style.display = (idx === i) ? 'flex' : 'none';
+            s.style.opacity = (idx === i) ? '1' : '0';
+          });
+
+          await new Promise(r => setTimeout(r, 200));
+
+          const canvas = await html2canvas(stage, {
+            scale: 1,
+            useCORS: true,
+            width: 1920,
+            height: 1080
+          });
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          const slide = pptx.addSlide();
+          slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
+        }
+
+        loadingStatus.textContent = '파일 저장 중...';
+        await pptx.writeFile({ fileName: '유치부_인도네시아어_따라읽기_슬라이드.pptx' });
+      } catch (err) {
+        console.error("PPTX 생성 실패:", err);
+      } finally {
+        slides.forEach(s => {
+          s.style.display = '';
+          s.style.opacity = '';
+        });
+        adjustScreenResolution();
+        updateSlide(originalIndex);
+        exportLoading.style.display = 'none';
+      }
+    }
+
+    /**
+     * PDF 내보내기 함수
      */
     async function exportToPDF() {
       if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
@@ -566,100 +550,72 @@
         return;
       }
 
-      pdfLoading.style.display = 'flex';
-      pdfStatus.textContent = '슬라이드 준비 중...';
+      exportLoading.style.display = 'flex';
+      loadingTitle.textContent = 'PDF 파일 생성 중...';
+      loadingStatus.textContent = '슬라이드 준비 중...';
 
       const originalIndex = currentIndex;
-      const originalRatioIndex = currentRatioIndex;
-      const originalWidth = stage.style.width;
-      const originalHeight = stage.style.height;
-      const originalTransform = stage.style.transform;
 
       try {
-        // PDF 캡처를 위해 스테이지를 표준 Full HD 16:9(1920x1080) 고정 크기로 세팅
-        const renderWidth = 1920;
-        const renderHeight = 1080;
-        stage.style.width = renderWidth + 'px';
-        stage.style.height = renderHeight + 'px';
-        stage.style.transform = 'translate(-50%, -50%) scale(1)';
-
-        // 텍스트 크기 정밀 재계산
+        stage.style.transform = 'scale(1)';
         fitAllTexts();
 
         const { jsPDF } = window.jspdf;
-        // 16:9 landscape PDF 생성
-        const pdf = new jsPDF({
-          orientation: 'landscape',
-          unit: 'px',
-          format: [renderWidth, renderHeight]
-        });
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
 
         for (let i = 0; i < totalSlides; i++) {
-          pdfStatus.textContent = `슬라이드 변환 중... (${i + 1} / ${totalSlides})`;
+          loadingStatus.textContent = `슬라이드 변환 중... (${i + 1} / ${totalSlides})`;
 
-          // 각 슬라이드 활성화 및 강제 표시
           slides.forEach((s, idx) => {
-            if (idx === i) {
-              s.style.display = 'flex';
-              s.style.opacity = '1';
-              s.style.transform = 'none';
-              s.style.pointerEvents = 'auto';
-            } else {
-              s.style.display = 'none';
-              s.style.opacity = '0';
-            }
+            s.style.display = (idx === i) ? 'flex' : 'none';
+            s.style.opacity = (idx === i) ? '1' : '0';
           });
 
-          // 렌더링 딜레이 (애니메이션 및 폰트 렌더 완료 대기)
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(r => setTimeout(r, 200));
 
-          // 고화질 캔버스 캡처
           const canvas = await html2canvas(stage, {
-            scale: 1.5,
+            scale: 1,
             useCORS: true,
-            backgroundColor: null,
-            logging: false,
-            width: renderWidth,
-            height: renderHeight
+            width: 1920,
+            height: 1080
           });
 
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-          if (i > 0) {
-            pdf.addPage([renderWidth, renderHeight], 'landscape');
-          }
-          pdf.addImage(imgData, 'JPEG', 0, 0, renderWidth, renderHeight);
+          if (i > 0) pdf.addPage([1920, 1080], 'landscape');
+          pdf.addImage(imgData, 'JPEG', 0, 0, 1920, 1080);
         }
 
-        pdfStatus.textContent = '다운로드 파일 생성 중...';
+        loadingStatus.textContent = 'PDF 저장 중...';
         pdf.save('유치부_인도네시아어_따라읽기_슬라이드.pdf');
       } catch (err) {
-        console.error('PDF 생성 실패:', err);
-        // 에러 발생 시 브라우저 인쇄 다이얼로그로 대체
-        window.print();
+        console.error("PDF 생성 실패:", err);
       } finally {
-        // 스타일 원상 복구
         slides.forEach(s => {
           s.style.display = '';
           s.style.opacity = '';
-          s.style.transform = '';
-          s.style.pointerEvents = '';
         });
-
-        currentRatioIndex = originalRatioIndex;
         adjustScreenResolution();
         updateSlide(originalIndex);
-
-        pdfLoading.style.display = 'none';
+        exportLoading.style.display = 'none';
       }
     }
 
-    pdfBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      exportToPDF();
+    pptBtn.addEventListener('click', (e) => { e.stopPropagation(); exportToPPTX(); });
+    pdfBtn.addEventListener('click', (e) => { e.stopPropagation(); exportToPDF(); });
+
+    // 초기 실행
+    window.addEventListener('load', () => {
+      adjustScreenResolution();
+      updateSlide(0);
     });
 
-    updateSlide(0);
+    // 폰트 준비 완료 시 재계산
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        adjustScreenResolution();
+        fitAllTexts();
+      });
+    }
   </script>
 </body>
 </html>
